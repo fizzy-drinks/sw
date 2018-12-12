@@ -88,6 +88,7 @@ def print_usage():
     print()
     print('Possible commands:')
     print()
+    print('sw version')
     print('sw list')
     print('sw add       LABEL   ADDR')
     print('sw rename    LABEL   NEWLABEL')
