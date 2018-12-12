@@ -7,7 +7,7 @@ import subprocess
 import json
 
 
-VERSION = '0.1.0'
+VERSION = '0.2.0'
 DATA_DIR = path.join(path.expanduser('~'), '.sw')
 KEYRING_PATH = path.join(DATA_DIR, 'keyring.json')
 
@@ -59,6 +59,13 @@ def ssh_connect(keyring, label):
     return keyring
 
 
+def ssh_run(keyring, label, command):
+    print('Connecting to {0}...'.format(keyring[label]))
+    subprocess.run('ssh -t {0} {1}'.format(keyring[label], command), shell=True)
+    print('ssh session finished')
+    return keyring
+
+
 def export_keyring(keyring):
     print(json.dumps(keyring))
     return keyring
@@ -80,6 +87,7 @@ commands = {
     'connect': ssh_connect,
     'export': export_keyring,
     'import': import_keyring,
+    'run': ssh_run,
 }
 
 
@@ -94,6 +102,7 @@ def print_usage():
     print('sw rename    LABEL   NEWLABEL')
     print('sw remove    LABEL')
     print('sw connect   LABEL')
+    print('sw run       LABEL   COMMAND')
     print('sw export')
     print('sw import    FILE')
 
