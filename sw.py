@@ -12,6 +12,22 @@ DATA_DIR = path.join(path.expanduser('~'), '.sw')
 KEYRING_PATH = path.join(DATA_DIR, 'keyring.json')
 
 
+def read_keyring(fn):
+    def read_keyring_fn(*args, **kwargs):
+        subprocess.run('mkdir -p ' + DATA_DIR, shell=True)
+        try:
+            with open(KEYRING_PATH, 'r', encoding='utf-8') as f:
+                keyring = json.loads(f.read())
+        except (json.decoder.JSONDecodeError, FileNotFoundError):
+            keyring = {}
+
+        result = fn(*args, **kwargs, keyring=keyring)
+        save_keyring(keyring)
+        return result
+
+    return read_keyring_fn
+
+
 def print_version(*_args):
     print(VERSION)
 
@@ -21,6 +37,7 @@ def save_keyring(keyring):
         f.write(json.dumps(keyring))
 
 
+@read_keyring
 def list_keys(keyring):
     print('LABEL\tADDRESS')
     for key, addr in keyring.items():
@@ -28,6 +45,7 @@ def list_keys(keyring):
     return keyring
 
 
+@read_keyring
 def add_key(keyring, label, addr):
     if label in keyring:
         print('The label {0} is already registered!'.format(label))
@@ -36,6 +54,7 @@ def add_key(keyring, label, addr):
     return keyring
 
 
+@read_keyring
 def rename_key(keyring, label, new_label):
     if not add_key(new_label, keyring[label]):
         return keyring
@@ -44,6 +63,7 @@ def rename_key(keyring, label, new_label):
     return keyring
 
 
+@read_keyring
 def remove_key(keyring, label):
     if label not in keyring:
         print('The label {0} does not exist!'.format(label))
@@ -52,6 +72,7 @@ def remove_key(keyring, label):
     return keyring
 
 
+@read_keyring
 def ssh_connect(keyring, label):
     print('Connecting to {0}...'.format(keyring[label]))
     subprocess.run('ssh {0}'.format(keyring[label]), shell=True)
@@ -59,6 +80,7 @@ def ssh_connect(keyring, label):
     return keyring
 
 
+@read_keyring
 def ssh_run(keyring, label, command):
     print('Connecting to {0}...'.format(keyring[label]))
     subprocess.run('ssh -t {0} {1}'.format(keyring[label], command), shell=True)
@@ -66,11 +88,13 @@ def ssh_run(keyring, label, command):
     return keyring
 
 
+@read_keyring
 def export_keyring(keyring):
     print(json.dumps(keyring))
     return keyring
 
 
+@read_keyring
 def import_keyring(keyring, filepath):
     print('Merging current keyring and external keyring...')
     with open(filepath, 'r', encoding='utf-8') as f:
@@ -117,17 +141,8 @@ def main():
         print_usage()
         exit()
 
-    subprocess.run('mkdir -p ' + DATA_DIR, shell=True)
-    try:
-        with open(KEYRING_PATH, 'r', encoding='utf-8') as f:
-            keyring = json.loads(f.read())
-    except (json.decoder.JSONDecodeError, FileNotFoundError):
-        keyring = {}
-
     args = sys.argv[2:]
-    keyring = commands[command](keyring, *args)
-
-    save_keyring(keyring)
+    keyring = commands[command](*args)
 
 
 if __name__ == '__main__':
