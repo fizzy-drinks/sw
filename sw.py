@@ -90,18 +90,24 @@ def remove_key(label, keyring):
 @required_argument_count(1)
 @read_keyring
 def ssh_connect(label, keyring):
-    print('Connecting to {0}...'.format(keyring[label]))
-    subprocess.run('ssh {0}'.format(keyring[label]), shell=True)
-    print('ssh session finished')
+    if label not in keyring:
+        print('{0} is not a valid label!'.format(label))
+    else:
+        print('Connecting to {0}...'.format(keyring[label]))
+        subprocess.run('ssh {0}'.format(keyring[label]), shell=True)
+        print('ssh session finished')
     return keyring
 
 
 @required_argument_count(2)
 @read_keyring
 def ssh_run(label, command, keyring):
-    print('Connecting to {0}...'.format(keyring[label]))
-    subprocess.run('ssh -t {0} {1}'.format(keyring[label], command), shell=True)
-    print('ssh session finished')
+    if label not in keyring:
+        print('{0} is not a valid label!'.format(label))
+    else:
+        print('Connecting to {0}...'.format(keyring[label]))
+        subprocess.run('ssh -t {0} {1}'.format(keyring[label], command), shell=True)
+        print('ssh session finished')
     return keyring
 
 
