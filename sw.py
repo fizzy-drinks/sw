@@ -12,20 +12,27 @@ DATA_DIR = path.join(path.expanduser('~'), '.sw')
 KEYRING_PATH = path.join(DATA_DIR, 'keyring.json')
 
 
-def read_keyring(fn):
-    def read_keyring_fn(*args, **kwargs):
-        subprocess.run('mkdir -p ' + DATA_DIR, shell=True)
-        try:
-            with open(KEYRING_PATH, 'r', encoding='utf-8') as f:
-                keyring = json.loads(f.read())
-        except (json.decoder.JSONDecodeError, FileNotFoundError):
-            keyring = {}
+def save_keyring(keyring):
+    with open(KEYRING_PATH, 'w+', encoding='utf-8') as f:
+        f.write(json.dumps(keyring))
+    return keyring
 
-        result = fn(*args, **kwargs, keyring=keyring)
-        save_keyring(keyring)
-        return result
 
-    return read_keyring_fn
+def open_keyring(write=True):
+    def open_keyring_decorator(fn):
+        def open_keyring_fn(*args, **kwargs):
+            subprocess.run('mkdir -p ' + DATA_DIR, shell=True)
+            try:
+                with open(KEYRING_PATH, 'r', encoding='utf-8') as f:
+                    keyring = json.loads(f.read())
+            except (json.decoder.JSONDecodeError, FileNotFoundError):
+                keyring = {}
+
+            result = fn(*args, **kwargs, keyring=keyring)
+            return save_keyring(result) if write else result
+
+        return open_keyring_fn
+    return open_keyring_decorator
 
 
 def required_argument_count(min_args):
@@ -40,16 +47,28 @@ def required_argument_count(min_args):
     return required_argument_count_decorator
 
 
+def validate_label(exists=True):
+    def validate_label_decorator(fn):
+        def validate_label_fn(label, *args, keyring, **kwargs):
+            does_exist = label in keyring
+            if does_exist == exists:
+                return fn(label, *args, keyring=keyring, **kwargs)
+            else:
+                if exists:
+                    print('{0} is not a valid label!'.format(label))
+                else:
+                    print('The label {0} is already registered!'.format(label))
+                return keyring
+
+        return validate_label_fn
+    return validate_label_decorator
+
+
 def print_version(*_args):
     print(VERSION)
 
 
-def save_keyring(keyring):
-    with open(KEYRING_PATH, 'w+', encoding='utf-8') as f:
-        f.write(json.dumps(keyring))
-
-
-@read_keyring
+@open_keyring(write=False)
 def list_keys(keyring):
     print('LABEL\tADDRESS')
     for key, addr in keyring.items():
@@ -57,68 +76,60 @@ def list_keys(keyring):
     return keyring
 
 
+@open_keyring()
+@validate_label(exists=False)
 @required_argument_count(2)
-@read_keyring
 def add_key(label, addr, keyring):
-    if label in keyring:
-        print('The label {0} is already registered!'.format(label))
-        return keyring
     keyring[label] = addr
     return keyring
 
 
+@open_keyring()
 @required_argument_count(2)
-@read_keyring
 def rename_key(label, new_label, keyring):
-    if not add_key(new_label, keyring[label]):
+    if not add_key(new_label, keyring[label], keyring=keyring):
         return keyring
-    if not remove_key(label):
+    if not remove_key(label, keyring=keyring):
         return keyring
     return keyring
 
 
+@open_keyring()
+@validate_label()
 @required_argument_count(1)
-@read_keyring
 def remove_key(label, keyring):
-    if label not in keyring:
-        print('The label {0} does not exist!'.format(label))
-        return keyring
     keyring.pop(label)
     return keyring
 
 
+@open_keyring()
+@validate_label()
 @required_argument_count(1)
-@read_keyring
 def ssh_connect(label, keyring):
-    if label not in keyring:
-        print('{0} is not a valid label!'.format(label))
-    else:
-        print('Connecting to {0}...'.format(keyring[label]))
-        subprocess.run('ssh {0}'.format(keyring[label]), shell=True)
-        print('ssh session finished')
+    print('Connecting to {0}...'.format(keyring[label]))
+    subprocess.run('ssh {0}'.format(keyring[label]), shell=True)
+    print('ssh session finished')
     return keyring
 
 
+@open_keyring()
+@validate_label()
 @required_argument_count(2)
-@read_keyring
 def ssh_run(label, command, keyring):
-    if label not in keyring:
-        print('{0} is not a valid label!'.format(label))
-    else:
-        print('Connecting to {0}...'.format(keyring[label]))
-        subprocess.run('ssh -t {0} {1}'.format(keyring[label], command), shell=True)
-        print('ssh session finished')
+    print('Connecting to {0}...'.format(keyring[label]))
+    subprocess.run('ssh -t {0} {1}'.format(keyring[label], command), shell=True)
+    print('ssh session finished')
     return keyring
 
 
-@read_keyring
+@open_keyring(write=False)
 def export_keyring(keyring):
     print(json.dumps(keyring))
     return keyring
 
 
+@open_keyring()
 @required_argument_count(1)
-@read_keyring
 def import_keyring(keyring, filepath):
     print('Merging current keyring and external keyring...')
     with open(filepath, 'r', encoding='utf-8') as f:
@@ -166,7 +177,7 @@ def main():
         exit()
 
     args = sys.argv[2:]
-    keyring = commands[command](*args)
+    commands[command](*args)
 
 
 if __name__ == '__main__':
