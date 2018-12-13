@@ -131,7 +131,7 @@ def export_keyring(keyring):
 
 @open_keyring()
 @required_argument_count(1)
-def import_keyring(keyring, filepath):
+def import_keyring(filepath, keyring):
     print('Merging current keyring and external keyring...')
     with open(filepath, 'r', encoding='utf-8') as f:
         new_keys = json.loads(f.read())
