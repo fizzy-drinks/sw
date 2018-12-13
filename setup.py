@@ -7,7 +7,7 @@ with open('README.md', 'r') as f:
 
 setuptools.setup(
     name='sw-cli',
-    version='0.0.1',
+    version='0.0.2',
     author='Gabriel Chiconi',
     author_email='gabriel.chiconi@gmail.com',
     description='SSH Wallet for your personal computer!',

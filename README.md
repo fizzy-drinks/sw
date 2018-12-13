@@ -4,8 +4,10 @@ sw is a super simple SSH wallet for your servers!
 
 ## Installation
 
+Simply install `sw-cli` from the PyPI.
+
 ```bash
-curl -sSL https://raw.githubusercontent.com/gabrielchiconi/sw/master/install.sh | bash
+pip install sw-cli
 ```
 
 ## Usage
@@ -41,6 +43,7 @@ sw remove production
 To rename a server, run `sw rename OLD_NAME NEW_NAME`:
 
 ```bash
+sw rename production prod
 sw connect prod # success!
 ```
 
