@@ -28,6 +28,18 @@ def read_keyring(fn):
     return read_keyring_fn
 
 
+def required_argument_count(min_args):
+    def required_argument_count_decorator(fn):
+        def required_argument_count_decorator_fn(*args, **kwargs):
+            if len(args) < min_args:
+                print('This action requires {0} arguments!'.format(min_args))
+                return
+            return fn(*args, **kwargs)
+
+        return required_argument_count_decorator_fn
+    return required_argument_count_decorator
+
+
 def print_version(*_args):
     print(VERSION)
 
@@ -45,8 +57,9 @@ def list_keys(keyring):
     return keyring
 
 
+@required_argument_count(2)
 @read_keyring
-def add_key(keyring, label, addr):
+def add_key(label, addr, keyring):
     if label in keyring:
         print('The label {0} is already registered!'.format(label))
         return keyring
@@ -54,8 +67,9 @@ def add_key(keyring, label, addr):
     return keyring
 
 
+@required_argument_count(2)
 @read_keyring
-def rename_key(keyring, label, new_label):
+def rename_key(label, new_label, keyring):
     if not add_key(new_label, keyring[label]):
         return keyring
     if not remove_key(label):
@@ -63,8 +77,9 @@ def rename_key(keyring, label, new_label):
     return keyring
 
 
+@required_argument_count(1)
 @read_keyring
-def remove_key(keyring, label):
+def remove_key(label, keyring):
     if label not in keyring:
         print('The label {0} does not exist!'.format(label))
         return keyring
@@ -72,16 +87,18 @@ def remove_key(keyring, label):
     return keyring
 
 
+@required_argument_count(1)
 @read_keyring
-def ssh_connect(keyring, label):
+def ssh_connect(label, keyring):
     print('Connecting to {0}...'.format(keyring[label]))
     subprocess.run('ssh {0}'.format(keyring[label]), shell=True)
     print('ssh session finished')
     return keyring
 
 
+@required_argument_count(2)
 @read_keyring
-def ssh_run(keyring, label, command):
+def ssh_run(label, command, keyring):
     print('Connecting to {0}...'.format(keyring[label]))
     subprocess.run('ssh -t {0} {1}'.format(keyring[label], command), shell=True)
     print('ssh session finished')
@@ -94,6 +111,7 @@ def export_keyring(keyring):
     return keyring
 
 
+@required_argument_count(1)
 @read_keyring
 def import_keyring(keyring, filepath):
     print('Merging current keyring and external keyring...')
