@@ -1,13 +1,14 @@
 #!/usr/bin/python3
 
 '''Manages SSH servers'''
+import pkg_resources
 import sys
 from os import path
 import subprocess
 import json
 
 
-VERSION = '0.2.0'
+VERSION = pkg_resources.require('sshw')[0].version
 DATA_DIR = path.join(path.expanduser('~'), '.sw')
 KEYRING_PATH = path.join(DATA_DIR, 'keyring.json')
 
