@@ -6,7 +6,7 @@ with open('README.md', 'r') as f:
 
 
 setuptools.setup(
-    name='sshw',
+    name='sw-cli',
     version='0.0.1',
     author='Gabriel Chiconi',
     author_email='gabriel.chiconi@gmail.com',
