@@ -43,7 +43,7 @@ def required_argument_count(min_args):
         def required_argument_count_decorator_fn(*args, **kwargs):
             if len(args) < min_args:
                 print('This action requires {0} arguments!'.format(min_args))
-                return
+                return kwargs['keyring'] if 'keyring' in kwargs else None
             return fn(*args, **kwargs)
 
         return required_argument_count_decorator_fn
