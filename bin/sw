@@ -26,6 +26,8 @@ def open_keyring(write=True):
             try:
                 with open(KEYRING_PATH, 'r', encoding='utf-8') as f:
                     keyring = json.loads(f.read())
+                    if not isinstance(keyring, dict):
+                        keyring = {}
             except (json.decoder.JSONDecodeError, FileNotFoundError):
                 keyring = {}
 
