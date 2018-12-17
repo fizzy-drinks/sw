@@ -11,12 +11,38 @@ import json
 VERSION = pkg_resources.require('sw-cli')[0].version
 DATA_DIR = path.join(path.expanduser('~'), '.sw')
 KEYRING_PATH = path.join(DATA_DIR, 'keyring.json')
+SCRIPTS_PATH = path.join(DATA_DIR, 'scripts.json')
+
+
+def save_scripts(scripts):
+    with open(SCRIPTS_PATH, 'w+', encoding='utf-8') as f:
+        f.write(json.dumps(scripts))
+    return scripts
 
 
 def save_keyring(keyring):
     with open(KEYRING_PATH, 'w+', encoding='utf-8') as f:
         f.write(json.dumps(keyring))
     return keyring
+
+
+def open_scripts(write=True):
+    def open_scripts_decorator(fn):
+        def open_scripts_fn(*args, **kwargs):
+            subprocess.run('mkdir -p ' + DATA_DIR, shell=True)
+            try:
+                with open(SCRIPTS_PATH, 'r', encoding='utf-8') as f:
+                    scripts = json.loads(f.read())
+                    if not isinstance(scripts, dict):
+                        scripts = {}
+            except (json.decoder.JSONDecodeError, FileNotFoundError):
+                scripts = {}
+
+            result = fn(*args, **kwargs, scripts=scripts)
+            return save_scripts(result) if write else result
+
+        return open_scripts_fn
+    return open_scripts_decorator
 
 
 def open_keyring(write=True):
@@ -105,7 +131,7 @@ def remove_key(label, keyring):
     return keyring
 
 
-@open_keyring()
+@open_keyring(write=False)
 @validate_label()
 @required_argument_count(1)
 def ssh_connect(label, keyring):
@@ -115,7 +141,7 @@ def ssh_connect(label, keyring):
     return keyring
 
 
-@open_keyring()
+@open_keyring(write=False)
 @validate_label()
 @required_argument_count(2)
 def ssh_run(label, command, keyring):
@@ -140,6 +166,53 @@ def import_keyring(filepath, keyring):
     return {**keyring, **new_keys}
 
 
+@open_scripts(write=True)
+@required_argument_count(2)
+def add_script(label, script, scripts, **kwargs):
+    if label in scripts:
+        print('A script with the label {0} is already registered!'.format(label))
+        return scripts
+    return {**scripts, label: script}
+
+
+@open_scripts(write=True)
+@required_argument_count(1)
+def remove_script(label, scripts):
+    if label not in scripts:
+        print('Script {0} does not exist'.format(label))
+    else:
+        scripts.pop(label)
+    return scripts
+
+
+@open_scripts(write=False)
+@required_argument_count(2)
+def run_script(script_label, server_label, scripts):
+    if script_label not in scripts:
+        print('Script {0} does not exist'.format(script_label))
+    else:
+        ssh_run(server_label, scripts[script_label])
+
+
+@open_scripts(write=False)
+def list_scripts(scripts):
+    print('LABEL\tACTION')
+    for key, action in scripts.items():
+        print('{0}\t{1}'.format(key, action))
+
+
+@required_argument_count(1)
+def ssh_scripts(command, *args, **kwargs):
+    commands = {
+        'add': add_script,
+        'remove': remove_script,
+        'run': run_script,
+        'list': list_scripts,
+    }
+
+    return commands[command](*args, **kwargs)
+
+
 commands = {
     'version': print_version,
     'list': list_keys,
@@ -150,6 +223,7 @@ commands = {
     'export': export_keyring,
     'import': import_keyring,
     'run': ssh_run,
+    'script': ssh_scripts,
 }
 
 
