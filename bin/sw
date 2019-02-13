@@ -20,7 +20,7 @@ def save_scripts(scripts):
     return scripts
 
 
-def save_keyring(keyring):
+def save_keyring(keyring=None):
     with open(KEYRING_PATH, 'w+', encoding='utf-8') as f:
         f.write(json.dumps(keyring))
     return keyring
@@ -144,9 +144,9 @@ def ssh_connect(label, keyring):
 @open_keyring(write=False)
 @validate_label()
 @required_argument_count(2)
-def ssh_run(label, command, keyring):
+def ssh_run(label, command, keyring=None):
     print('Connecting to {0}...'.format(keyring[label]))
-    subprocess.run('ssh -t {0} {1}'.format(keyring[label], command), shell=True)
+    subprocess.run("ssh -t {0} '{1}'".format(keyring[label], command), shell=True)
     print('ssh session finished')
     return keyring
 
